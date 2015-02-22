@@ -1,4 +1,4 @@
-#![feature(path, env, process, fs, core)]
+#![feature(path, env, process, fs, old_path)]
 
 enum Compiler {
     Gcc,
@@ -101,6 +101,9 @@ fn main() {
         config("Release", Clang, Release, &[]),
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
-    ] { create_config(c, proj_dir.to_str().unwrap()); }
+    ] {
+        println!("=== Creating configuration for {} ===", c.name);
+        create_config(c, proj_dir.to_str().unwrap());
+    }
     
 }
