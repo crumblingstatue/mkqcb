@@ -1,4 +1,6 @@
-#![feature(path, env, process, fs, old_path)]
+#![feature(path, env, process, fs)]
+
+use std::path::Path;
 
 enum Compiler {
     Gcc,
@@ -71,7 +73,7 @@ fn create_config(conf: &Config, project_dir: &str) {
     use std::process::Command;
     let parent_dir = env::current_dir().unwrap();
     fs::create_dir(&conf.name).unwrap();
-    env::set_current_dir(&std::old_path::Path::new(&conf.name)).unwrap();
+    env::set_current_dir(&Path::new(&conf.name)).unwrap();
     Command::new("cmake").arg(project_dir)
                          .arg("-GCodeBlocks - Ninja")
                          .args(&conf.compiler.as_cmake_args())
@@ -82,11 +84,13 @@ fn create_config(conf: &Config, project_dir: &str) {
     env::set_current_dir(&parent_dir).unwrap();
 }
 
+extern crate ansi_term;
+
 fn main() {
     use std::fs::PathExt;
     let arg = std::env::args().nth(1).expect("Needs project dir as argument!");
     let abs = std::env::current_dir().unwrap().join(&arg);
-    let proj_dir = std::path::Path::new(abs.as_str().unwrap());
+    let proj_dir = abs;
     if !proj_dir.exists() {
         panic!("Directory {:?} does not exist.", proj_dir);
     }
@@ -102,7 +106,11 @@ fn main() {
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
     ] {
-        println!("=== Creating configuration for {} ===", c.name);
+        use ansi_term::Colour::{Green, Yellow, White};
+        println!("{0} {1} {2} {0}",
+            Green.bold().paint("==="),
+            White.bold().paint("Creating configuration for"),
+            Yellow.bold().paint(&c.name));
         create_config(c, proj_dir.to_str().unwrap());
     }
     

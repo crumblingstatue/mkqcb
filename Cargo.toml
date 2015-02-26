@@ -3,3 +3,6 @@
 name = "mkqcb"
 version = "0.0.1"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+ansi_term = ">=0.5.0"
