@@ -1,4 +1,4 @@
-#![feature(path, fs)]
+#![feature(path, path_ext)]
 
 use std::path::Path;
 
@@ -105,6 +105,7 @@ fn main() {
         config("Release", Clang, Release, &[]),
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
+        config("Tsan", Clang, Debug, &["-DSANITIZE=thread"]),
     ] {
         use ansi_term::Colour::{Green, Yellow, White};
         println!("{0} {1} {2} {0}",
