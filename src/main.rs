@@ -1,5 +1,8 @@
-#![feature(path, path_ext)]
+#![feature(path, path_ext, collections)]
 
+extern crate getopts;
+
+use getopts::Options;
 use std::path::Path;
 
 enum Compiler {
@@ -86,9 +89,28 @@ fn create_config(conf: &Config, project_dir: &str) {
 
 extern crate ansi_term;
 
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} [options]", program);
+    print!("{}", opts.usage(&brief));
+}
+
 fn main() {
     use std::fs::PathExt;
-    let arg = std::env::args().nth(1).expect("Needs project dir as argument!");
+    let mut args = std::env::args();
+    let mut opts = Options::new();
+    let program = args.next().unwrap().clone();
+    opts.optflag("", "no-sanitize",
+                     "Don't build sanitize configurations");
+    opts.optflag("h", "help", "print this help menu");
+    let matches = match opts.parse(args) {
+        Ok(m) => m,
+        Err(e) => panic!("{}", e)
+    };
+    if matches.opt_present("h") {
+        print_usage(&program, opts);
+        return;
+    }
+    let arg = matches.free.get(0).expect("Needs project dir as argument!");
     let abs = std::env::current_dir().unwrap().join(&arg);
     let proj_dir = abs;
     if !proj_dir.exists() {
@@ -98,21 +120,25 @@ fn main() {
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&Path::new(build_dir.to_str().unwrap())).unwrap();
-    for c in &[
+    let mut configs = vec![
         config("Debug", Gcc, Debug, &[]),
         config("Release", Gcc, Release, &[]),
         config("Debug", Clang, Debug, &[]),
-        config("Release", Clang, Release, &[]),
+        config("Release", Clang, Release, &[])
+    ];
+    if !matches.opt_present("no-sanitize") {
+        configs.append(&mut vec![
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
-        config("Tsan", Clang, Debug, &["-DSANITIZE=thread"]),
-    ] {
+        config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
+    }
+    for c in configs {
         use ansi_term::Colour::{Green, Yellow, White};
         println!("{0} {1} {2} {0}",
             Green.bold().paint("==="),
             White.bold().paint("Creating configuration for"),
             Yellow.bold().paint(&c.name));
-        create_config(c, proj_dir.to_str().unwrap());
+        create_config(&c, proj_dir.to_str().unwrap());
     }
     
 }
