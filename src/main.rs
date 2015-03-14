@@ -1,4 +1,4 @@
-#![feature(path, path_ext, collections)]
+#![feature(path_ext, collections)]
 
 extern crate getopts;
 
