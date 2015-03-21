@@ -60,9 +60,9 @@ fn config(name: &str, comp: Compiler, build_type: BuildType,
           args: &[&'static str]) -> Config {
     use std::borrow::ToOwned;
     let name = format!("{}-{}", comp, name);
-    let args: Vec<String> = args.iter()
-                                .map(|&x| -> String x.to_owned())
-                                .collect();
+    let args = args.iter()
+                   .map(|&x| x.to_owned())
+                   .collect::<Vec<_>>();
     Config {
         name: name,
         compiler: comp,
