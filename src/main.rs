@@ -71,13 +71,13 @@ fn config(name: &str, comp: Compiler, build_type: BuildType,
     }
 }
 
-fn create_config(conf: &Config, project_dir: &str) {
+fn create_config(conf: &Config, project_dir: &str) -> bool {
     use std::{fs, env};
     use std::process::Command;
     let parent_dir = env::current_dir().unwrap();
     fs::create_dir(&conf.name).unwrap();
     env::set_current_dir(&Path::new(&conf.name)).unwrap();
-    Command::new("cmake").arg(project_dir)
+    let result = Command::new("cmake").arg(project_dir)
                          .arg("-GCodeBlocks - Ninja")
                          .args(&conf.compiler.as_cmake_args())
                          .arg(conf.build_type.as_cmake_arg())
@@ -85,6 +85,7 @@ fn create_config(conf: &Config, project_dir: &str) {
                          .status()
                          .unwrap();
     env::set_current_dir(&parent_dir).unwrap();
+    result.success()
 }
 
 extern crate ansi_term;
@@ -138,7 +139,9 @@ fn main() {
             Green.bold().paint("==="),
             White.bold().paint("Creating configuration for"),
             Yellow.bold().paint(&c.name));
-        create_config(&c, proj_dir.to_str().unwrap());
+        if !create_config(&c, proj_dir.to_str().unwrap()) {
+            break;
+        }
     }
     
 }
