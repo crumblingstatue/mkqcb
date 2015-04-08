@@ -95,6 +95,18 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
+fn check_has_sanitize(path: &Path) -> bool {
+    use std::fs::File;
+    use std::io::Read;
+    let mut f = File::open(path.join("CMakeLists.txt")).unwrap();
+    let mut s = String::new();
+    f.read_to_string(&mut s).unwrap();
+    match s.find("${SANITIZE}") {
+        Some(_) => true,
+        None => false
+    }
+}
+
 fn main() {
     use std::fs::PathExt;
     let mut args = std::env::args();
@@ -117,6 +129,7 @@ fn main() {
     if !proj_dir.exists() {
         panic!("Directory {:?} does not exist.", proj_dir);
     }
+    let has_sanitize = check_has_sanitize(&proj_dir);
     let build_dir_string = "build-".to_string() + &arg;
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
@@ -127,7 +140,7 @@ fn main() {
         config("Debug", Clang, Debug, &[]),
         config("Release", Clang, Release, &[])
     ];
-    if !matches.opt_present("no-sanitize") {
+    if has_sanitize && !matches.opt_present("no-sanitize") {
         configs.append(&mut vec![
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
