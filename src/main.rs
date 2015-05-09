@@ -91,7 +91,7 @@ fn create_config(conf: &Config, project_dir: &str) -> bool {
 extern crate ansi_term;
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options]", program);
+    let brief = format!("Usage: {} project_dir [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
@@ -123,7 +123,13 @@ fn main() {
         print_usage(&program, opts);
         return;
     }
-    let arg = matches.free.get(0).expect("Needs project dir as argument!");
+    let arg = match matches.free.get(0) {
+        Some(arg) => arg,
+        None => {
+            print_usage(&program, opts);
+            return;
+        }
+    };
     let abs = std::env::current_dir().unwrap().join(&arg);
     let proj_dir = abs;
     if !proj_dir.exists() {
