@@ -1,5 +1,3 @@
-#![feature(path_ext, collections)]
-
 extern crate getopts;
 
 use getopts::Options;
@@ -14,7 +12,7 @@ use std::fmt::{Display, Formatter};
 
 impl Display for Compiler {
     fn fmt(&self, fmtr: &mut Formatter) -> Result<(), std::fmt::Error> {
-        write!(fmtr, "{}", 
+        write!(fmtr, "{}",
         match *self {
             Gcc => "GCC",
             Clang => "Clang"
@@ -108,7 +106,6 @@ fn check_has_sanitize(path: &Path) -> bool {
 }
 
 fn main() {
-    use std::fs::PathExt;
     let mut args = std::env::args();
     let mut opts = Options::new();
     let program = args.next().unwrap().clone();
@@ -132,8 +129,9 @@ fn main() {
     };
     let abs = std::env::current_dir().unwrap().join(&arg);
     let proj_dir = abs;
-    if !proj_dir.exists() {
-        panic!("Directory {:?} does not exist.", proj_dir);
+    match std::fs::metadata(&proj_dir) {
+        Ok(_) => {},
+        Err(e) => panic!("Error while trying to look up directory {:?}: {}", proj_dir, e),
     }
     let has_sanitize = check_has_sanitize(&proj_dir);
     let build_dir_string = "build-".to_string() + &arg;
@@ -147,7 +145,7 @@ fn main() {
         config("Release", Clang, Release, &[])
     ];
     if has_sanitize && !matches.opt_present("no-sanitize") {
-        configs.append(&mut vec![
+        configs.extend(vec![
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
         config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
@@ -162,5 +160,5 @@ fn main() {
             break;
         }
     }
-    
+
 }
