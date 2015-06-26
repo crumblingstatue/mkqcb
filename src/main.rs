@@ -96,7 +96,10 @@ fn print_usage(program: &str, opts: Options) {
 fn check_has_sanitize(path: &Path) -> bool {
     use std::fs::File;
     use std::io::Read;
-    let mut f = File::open(path.join("CMakeLists.txt")).unwrap();
+    let mut f = match File::open(path.join("CMakeLists.txt")) {
+        Ok(f) => f,
+        Err(e) => panic!("Could not open CMakeLists.txt: {}", e),
+    };
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
     match s.find("${SANITIZE}") {
