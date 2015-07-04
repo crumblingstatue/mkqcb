@@ -117,7 +117,7 @@ fn run() -> (i32, Option<String>) {
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => return (1, Some(format!("{}", e))),
     };
     if matches.opt_present("h") {
         print_usage(&program, opts);
