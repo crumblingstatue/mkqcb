@@ -134,7 +134,10 @@ fn run() -> (i32, Option<String>) {
     let proj_dir = abs;
     match std::fs::metadata(&proj_dir) {
         Ok(_) => {},
-        Err(e) => panic!("Error while trying to look up directory {:?}: {}", proj_dir, e),
+        Err(e) => {
+            return (1,
+                Some(format!("Error while trying to look up directory {:?}: {}", proj_dir, e)));
+        }
     }
     let has_sanitize = check_has_sanitize(&proj_dir);
     let build_dir_string = "build-".to_string() + &arg;
