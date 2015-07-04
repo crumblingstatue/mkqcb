@@ -93,19 +93,23 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn check_has_sanitize(path: &Path) -> bool {
+struct CMakeListsProperties {
+    has_sanitize: bool,
+}
+
+fn parse_cmakelists_txt(path: &Path) -> std::io::Result<CMakeListsProperties> {
     use std::fs::File;
     use std::io::Read;
-    let mut f = match File::open(path.join("CMakeLists.txt")) {
-        Ok(f) => f,
-        Err(e) => panic!("Could not open CMakeLists.txt: {}", e),
-    };
+    let mut f = try!(File::open(path.join("CMakeLists.txt")));
     let mut s = String::new();
-    f.read_to_string(&mut s).unwrap();
-    match s.find("${SANITIZE}") {
+    try!(f.read_to_string(&mut s));
+    let has_sanitize = match s.find("${SANITIZE}") {
         Some(_) => true,
         None => false
-    }
+    };
+    Ok(CMakeListsProperties {
+        has_sanitize: has_sanitize,
+    })
 }
 
 fn run() -> (i32, Option<String>) {
@@ -139,7 +143,12 @@ fn run() -> (i32, Option<String>) {
                 Some(format!("Error while trying to look up directory {:?}: {}", proj_dir, e)));
         }
     }
-    let has_sanitize = check_has_sanitize(&proj_dir);
+    let props = match parse_cmakelists_txt(&proj_dir) {
+        Ok(props) => props,
+        Err(e) => {
+            return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
+        }
+    };
     let build_dir_string = "build-".to_string() + &arg;
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
@@ -150,7 +159,7 @@ fn run() -> (i32, Option<String>) {
         config("Debug", Clang, Debug, &[]),
         config("Release", Clang, Release, &[])
     ];
-    if has_sanitize && !matches.opt_present("no-sanitize") {
+    if props.has_sanitize && !matches.opt_present("no-sanitize") {
         configs.extend(vec![
         config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
         config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
