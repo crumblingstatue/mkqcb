@@ -108,7 +108,7 @@ fn check_has_sanitize(path: &Path) -> bool {
     }
 }
 
-fn run() -> i32 {
+fn run() -> (i32, Option<String>) {
     let mut args = std::env::args();
     let mut opts = Options::new();
     let program = args.next().unwrap().clone();
@@ -121,13 +121,13 @@ fn run() -> i32 {
     };
     if matches.opt_present("h") {
         print_usage(&program, opts);
-        return 1;
+        return (1, None);
     }
     let arg = match matches.free.get(0) {
         Some(arg) => arg,
         None => {
             print_usage(&program, opts);
-            return 1;
+            return (1, None);
         }
     };
     let abs = std::env::current_dir().unwrap().join(&arg);
@@ -164,9 +164,14 @@ fn run() -> i32 {
         }
     }
 
-    return 0;
+    return (0, None);
 }
 
 fn main() {
-    std::process::exit(run());
+    let (retv, opt_msg) = run();
+    if let Some(msg) = opt_msg {
+        use std::io::Write;
+        let _ = writeln!(std::io::stderr(), "{}", msg);
+    }
+    std::process::exit(retv);
 }
