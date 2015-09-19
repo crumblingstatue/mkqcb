@@ -141,7 +141,7 @@ fn run() -> (i32, Option<String>) {
             return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
         }
     };
-    let build_dir_string = "build-".to_string() + &arg;
+    let build_dir_string = "build-".to_owned() + &arg;
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&Path::new(build_dir.to_str().unwrap())).unwrap();
@@ -165,7 +165,7 @@ fn run() -> (i32, Option<String>) {
         }
     }
 
-    return (0, None);
+    (0, None)
 }
 
 fn main() {
