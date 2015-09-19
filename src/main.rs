@@ -5,19 +5,19 @@ use std::path::Path;
 
 enum Compiler {
     Gcc,
-    Clang
+    Clang,
 }
 
 use std::fmt::{Display, Formatter};
 
 impl Display for Compiler {
     fn fmt(&self, fmtr: &mut Formatter) -> Result<(), std::fmt::Error> {
-        write!(fmtr, "{}",
-        match *self {
-            Gcc => "GCC",
-            Clang => "Clang"
-        }
-        )
+        write!(fmtr,
+               "{}",
+               match *self {
+                   Gcc => "GCC",
+                   Clang => "Clang",
+               })
     }
 }
 
@@ -25,21 +25,21 @@ impl Compiler {
     fn as_cmake_args(&self) -> [&'static str; 2] {
         match *self {
             Gcc => ["-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"],
-            Clang => ["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"]
+            Clang => ["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"],
         }
     }
 }
 
 enum BuildType {
     Debug,
-    Release
+    Release,
 }
 
 impl BuildType {
     fn as_cmake_arg(&self) -> &'static str {
         match *self {
             Debug => "-DCMAKE_BUILD_TYPE=Debug",
-            Release => "-DCMAKE_BUILD_TYPE=Release"
+            Release => "-DCMAKE_BUILD_TYPE=Release",
         }
     }
 }
@@ -51,22 +51,16 @@ struct Config {
     name: String,
     compiler: Compiler,
     build_type: BuildType,
-    cmake_args: Vec<String>
+    cmake_args: Vec<String>,
 }
 
-fn config(name: &str, comp: Compiler, build_type: BuildType,
-          args: &[&'static str]) -> Config {
+fn config(name: &str, comp: Compiler, build_type: BuildType, args: &[&'static str]) -> Config {
     use std::borrow::ToOwned;
     let name = format!("{}-{}", comp, name);
     let args = args.iter()
                    .map(|&x| x.to_owned())
                    .collect::<Vec<_>>();
-    Config {
-        name: name,
-        compiler: comp,
-        build_type: build_type,
-        cmake_args: args
-    }
+    Config { name: name, compiler: comp, build_type: build_type, cmake_args: args }
 }
 
 fn create_config(conf: &Config, project_dir: &str) -> bool {
@@ -75,13 +69,14 @@ fn create_config(conf: &Config, project_dir: &str) -> bool {
     let parent_dir = env::current_dir().unwrap();
     fs::create_dir(&conf.name).unwrap();
     env::set_current_dir(&Path::new(&conf.name)).unwrap();
-    let result = Command::new("cmake").arg(project_dir)
-                         .arg("-GCodeBlocks - Ninja")
-                         .args(&conf.compiler.as_cmake_args())
-                         .arg(conf.build_type.as_cmake_arg())
-                         .args(&conf.cmake_args)
-                         .status()
-                         .unwrap();
+    let result = Command::new("cmake")
+                     .arg(project_dir)
+                     .arg("-GCodeBlocks - Ninja")
+                     .args(&conf.compiler.as_cmake_args())
+                     .arg(conf.build_type.as_cmake_arg())
+                     .args(&conf.cmake_args)
+                     .status()
+                     .unwrap();
     env::set_current_dir(&parent_dir).unwrap();
     result.success()
 }
@@ -105,19 +100,16 @@ fn parse_cmakelists_txt(path: &Path) -> std::io::Result<CMakeListsProperties> {
     try!(f.read_to_string(&mut s));
     let has_sanitize = match s.find("${SANITIZE}") {
         Some(_) => true,
-        None => false
+        None => false,
     };
-    Ok(CMakeListsProperties {
-        has_sanitize: has_sanitize,
-    })
+    Ok(CMakeListsProperties { has_sanitize: has_sanitize })
 }
 
 fn run() -> (i32, Option<String>) {
     let mut args = std::env::args();
     let mut opts = Options::new();
     let program = args.next().unwrap().clone();
-    opts.optflag("", "no-sanitize",
-                     "Don't build sanitize configurations");
+    opts.optflag("", "no-sanitize", "Don't build sanitize configurations");
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(args) {
         Ok(m) => m,
@@ -137,7 +129,7 @@ fn run() -> (i32, Option<String>) {
     let abs = std::env::current_dir().unwrap().join(&arg);
     let proj_dir = abs;
     match std::fs::metadata(&proj_dir) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             return (1,
                 Some(format!("Error while trying to look up directory {:?}: {}", proj_dir, e)));
@@ -153,24 +145,21 @@ fn run() -> (i32, Option<String>) {
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&Path::new(build_dir.to_str().unwrap())).unwrap();
-    let mut configs = vec![
-        config("Debug", Gcc, Debug, &[]),
-        config("Release", Gcc, Release, &[]),
-        config("Debug", Clang, Debug, &[]),
-        config("Release", Clang, Release, &[])
-    ];
+    let mut configs = vec![config("Debug", Gcc, Debug, &[]),
+                           config("Release", Gcc, Release, &[]),
+                           config("Debug", Clang, Debug, &[]),
+                           config("Release", Clang, Release, &[])];
     if props.has_sanitize && !matches.opt_present("no-sanitize") {
-        configs.extend(vec![
-        config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
-        config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
-        config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
+        configs.extend(vec![config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
+                            config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
+                            config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
     }
     for c in configs {
         use ansi_term::Colour::{Green, Yellow, White};
         println!("{0} {1} {2} {0}",
-            Green.bold().paint("==="),
-            White.bold().paint("Creating configuration for"),
-            Yellow.bold().paint(&c.name));
+                 Green.bold().paint("==="),
+                 White.bold().paint("Creating configuration for"),
+                 Yellow.bold().paint(&c.name));
         if !create_config(&c, proj_dir.to_str().unwrap()) {
             break;
         }
