@@ -60,7 +60,12 @@ fn config(name: &str, comp: Compiler, build_type: BuildType, args: &[&'static st
     let args = args.iter()
                    .map(|&x| x.to_owned())
                    .collect::<Vec<_>>();
-    Config { name: name, compiler: comp, build_type: build_type, cmake_args: args }
+    Config {
+        name: name,
+        compiler: comp,
+        build_type: build_type,
+        cmake_args: args,
+    }
 }
 
 fn create_config(conf: &Config, project_dir: &str) -> bool {
@@ -132,13 +137,16 @@ fn run() -> (i32, Option<String>) {
         Ok(_) => {}
         Err(e) => {
             return (1,
-                Some(format!("Error while trying to look up directory {:?}: {}", proj_dir, e)));
+                    Some(format!("Error while trying to look up directory {:?}: {}",
+                                 proj_dir,
+                                 e)));
         }
     }
     let props = match parse_cmakelists_txt(&proj_dir) {
         Ok(props) => props,
         Err(e) => {
-            return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
+            return (1,
+                    Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
         }
     };
     let build_dir_string = "build-".to_owned() + &arg;
