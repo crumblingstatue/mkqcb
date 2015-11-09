@@ -167,7 +167,7 @@ fn run() -> (i32, Option<String>) {
         println!("{0} {1} {2} {0}",
                  Green.bold().paint("==="),
                  White.bold().paint("Creating configuration for"),
-                 Yellow.bold().paint(&c.name));
+                 Yellow.bold().paint(&c.name[..]));
         if !create_config(&c, proj_dir.to_str().unwrap()) {
             break;
         }
