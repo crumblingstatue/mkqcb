@@ -58,8 +58,8 @@ fn config(name: &str, comp: Compiler, build_type: BuildType, args: &[&'static st
     use std::borrow::ToOwned;
     let name = format!("{}-{}", comp, name);
     let args = args.iter()
-                   .map(|&x| x.to_owned())
-                   .collect::<Vec<_>>();
+        .map(|&x| x.to_owned())
+        .collect::<Vec<_>>();
     Config {
         name: name,
         compiler: comp,
@@ -75,13 +75,13 @@ fn create_config(conf: &Config, project_dir: &str) -> bool {
     fs::create_dir(&conf.name).unwrap();
     env::set_current_dir(&Path::new(&conf.name)).unwrap();
     let result = Command::new("cmake")
-                     .arg(project_dir)
-                     .arg("-GCodeBlocks - Ninja")
-                     .args(&conf.compiler.as_cmake_args())
-                     .arg(conf.build_type.as_cmake_arg())
-                     .args(&conf.cmake_args)
-                     .status()
-                     .unwrap();
+        .arg(project_dir)
+        .arg("-GCodeBlocks - Ninja")
+        .args(&conf.compiler.as_cmake_args())
+        .arg(conf.build_type.as_cmake_arg())
+        .args(&conf.cmake_args)
+        .status()
+        .unwrap();
     env::set_current_dir(&parent_dir).unwrap();
     result.success()
 }
@@ -145,8 +145,7 @@ fn run() -> (i32, Option<String>) {
     let props = match parse_cmakelists_txt(&proj_dir) {
         Ok(props) => props,
         Err(e) => {
-            return (1,
-                    Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
+            return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
         }
     };
     let build_dir_string = "build-".to_owned() + &arg;
