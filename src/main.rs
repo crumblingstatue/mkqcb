@@ -3,6 +3,21 @@ extern crate getopts;
 use getopts::Options;
 use std::path::{Path, PathBuf};
 
+#[derive(Clone, Copy)]
+enum BuildSystem {
+    Make,
+    Ninja,
+}
+
+impl BuildSystem {
+    fn as_cmake_arg(&self) -> &'static str {
+        match *self {
+            BuildSystem::Make => "-GCodeBlocks - Unix Makefiles",
+            BuildSystem::Ninja => "-GCodeBlocks - Ninja",
+        }
+    }
+}
+
 enum Compiler {
     Gcc,
     Clang,
@@ -63,7 +78,7 @@ fn config(name: &str, comp: Compiler, build_type: BuildType, args: &[&'static st
     }
 }
 
-fn create_config(conf: &Config, project_dir: &str) -> bool {
+fn create_config(conf: &Config, build_system: BuildSystem, project_dir: &str) -> bool {
     use std::{fs, env};
     use std::process::Command;
     let parent_dir = env::current_dir().unwrap();
@@ -71,7 +86,7 @@ fn create_config(conf: &Config, project_dir: &str) -> bool {
     env::set_current_dir(&Path::new(&conf.name)).unwrap();
     let result = Command::new("cmake")
         .arg(project_dir)
-        .arg("-GCodeBlocks - Ninja")
+        .arg(build_system.as_cmake_arg())
         .args(&conf.compiler.as_cmake_args())
         .arg(conf.build_type.as_cmake_arg())
         .args(&conf.cmake_args)
@@ -110,6 +125,9 @@ fn run() -> (i32, Option<String>) {
     let mut opts = Options::new();
     let program = args.next().unwrap().clone();
     opts.optflag("", "no-sanitize", "Don't build sanitize configurations");
+    opts.optflag("",
+                 "no-ninja",
+                 "Don't use ninja as a build system. Use plain make instead.");
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(args) {
         Ok(m) => m,
@@ -154,13 +172,18 @@ fn run() -> (i32, Option<String>) {
                             config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
                             config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
     }
+    let build_system = if matches.opt_present("no-ninja") {
+        BuildSystem::Make
+    } else {
+        BuildSystem::Ninja
+    };
     for c in configs {
         use ansi_term::Colour::{Green, Yellow, White};
         println!("{0} {1} {2} {0}",
                  Green.bold().paint("==="),
                  White.bold().paint("Creating configuration for"),
                  Yellow.bold().paint(&c.name[..]));
-        if !create_config(&c, proj_dir.to_str().unwrap()) {
+        if !create_config(&c, build_system, proj_dir.to_str().unwrap()) {
             break;
         }
     }
