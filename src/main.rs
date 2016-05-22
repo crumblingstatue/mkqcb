@@ -146,7 +146,7 @@ fn run() -> (i32, Option<String>) {
     let build_dir_string = "build-".to_owned() + &arg;
     let build_dir = std::path::Path::new(&build_dir_string);
     std::fs::create_dir(&build_dir).unwrap();
-    std::env::set_current_dir(&Path::new(build_dir.to_str().unwrap())).unwrap();
+    std::env::set_current_dir(build_dir).unwrap();
     let mut configs = vec![config("Debug", Gcc, Debug, &[]),
                            config("Release", Gcc, Release, &[]),
                            config("Debug", Clang, Debug, &[]),
