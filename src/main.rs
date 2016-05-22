@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use getopts::Options;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 enum Compiler {
     Gcc,
@@ -126,8 +126,7 @@ fn run() -> (i32, Option<String>) {
             return (1, None);
         }
     };
-    let abs = std::env::current_dir().unwrap().join(&arg);
-    let proj_dir = abs;
+    let proj_dir = std::env::current_dir().unwrap().join(&arg);
     match std::fs::metadata(&proj_dir) {
         Ok(_) => {}
         Err(e) => {
@@ -143,10 +142,9 @@ fn run() -> (i32, Option<String>) {
             return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
         }
     };
-    let build_dir_string = "build-".to_owned() + &arg;
-    let build_dir = std::path::Path::new(&build_dir_string);
+    let build_dir = PathBuf::from(format!("build-{}", arg));
     std::fs::create_dir(&build_dir).unwrap();
-    std::env::set_current_dir(build_dir).unwrap();
+    std::env::set_current_dir(&build_dir).unwrap();
     let mut configs = vec![config("Debug", Gcc, Debug, &[]),
                            config("Release", Gcc, Release, &[]),
                            config("Debug", Clang, Debug, &[]),
