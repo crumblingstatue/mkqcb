@@ -51,20 +51,15 @@ struct Config {
     name: String,
     compiler: Compiler,
     build_type: BuildType,
-    cmake_args: Vec<String>,
+    cmake_args: Vec<&'static str>,
 }
 
 fn config(name: &str, comp: Compiler, build_type: BuildType, args: &[&'static str]) -> Config {
-    use std::borrow::ToOwned;
-    let name = format!("{}-{}", comp, name);
-    let args = args.iter()
-        .map(|&x| x.to_owned())
-        .collect::<Vec<_>>();
     Config {
-        name: name,
+        name: format!("{}-{}", comp, name),
         compiler: comp,
         build_type: build_type,
-        cmake_args: args,
+        cmake_args: args.to_owned(),
     }
 }
 
