@@ -161,6 +161,11 @@ fn run() -> (i32, Option<String>) {
         }
     };
     let build_dir = PathBuf::from(format!("build-{}", arg));
+    if build_dir.exists() {
+        return (1,
+                Some(format!("The build directory ({:?}) already exists. Delete it first.",
+                             build_dir)));
+    }
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&build_dir).unwrap();
     let mut configs = vec![config("Debug", Gcc, Debug, &[]),
