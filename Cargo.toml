@@ -5,5 +5,5 @@ version = "0.0.1"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-ansi_term = "0.7.2"
+ansi_term = "0.9"
 getopts = "0.2.14"
