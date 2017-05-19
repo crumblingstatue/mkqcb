@@ -27,12 +27,12 @@ use std::fmt::{Display, Formatter};
 
 impl Display for Compiler {
     fn fmt(&self, fmtr: &mut Formatter) -> Result<(), std::fmt::Error> {
-        write!(fmtr,
-               "{}",
-               match *self {
-                   Gcc => "GCC",
-                   Clang => "Clang",
-               })
+        write!(
+            fmtr, "{}", match *self {
+                Gcc => "GCC",
+                Clang => "Clang",
+            }
+        )
     }
 }
 
@@ -98,7 +98,7 @@ fn create_config(conf: &Config, build_system: BuildSystem, project_dir: &str) ->
 
 extern crate ansi_term;
 
-fn print_usage(program: &str, opts: Options) {
+fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} project_dir [options]", program);
     print!("{}", opts.usage(&brief));
 }
@@ -125,22 +125,24 @@ fn run() -> (i32, Option<String>) {
     let mut opts = Options::new();
     let program = args.next().unwrap().clone();
     opts.optflag("", "no-sanitize", "Don't build sanitize configurations");
-    opts.optflag("",
-                 "no-ninja",
-                 "Don't use ninja as a build system. Use plain make instead.");
+    opts.optflag(
+        "",
+        "no-ninja",
+        "Don't use ninja as a build system. Use plain make instead.",
+    );
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(args) {
         Ok(m) => m,
         Err(e) => return (1, Some(format!("{}", e))),
     };
     if matches.opt_present("h") {
-        print_usage(&program, opts);
+        print_usage(&program, &opts);
         return (1, None);
     }
     let arg = match matches.free.get(0) {
         Some(arg) => arg,
         None => {
-            print_usage(&program, opts);
+            print_usage(&program, &opts);
             return (1, None);
         }
     };
@@ -149,33 +151,50 @@ fn run() -> (i32, Option<String>) {
         Ok(_) => {}
         Err(e) => {
             return (1,
-                    Some(format!("Error while trying to look up directory {:?}: {}",
-                                 proj_dir,
-                                 e)));
+                    Some(
+                format!(
+                    "Error while trying to look up directory {:?}: {}",
+                    proj_dir,
+                    e
+                )
+            ));
         }
     }
     let props = match parse_cmakelists_txt(&proj_dir) {
         Ok(props) => props,
         Err(e) => {
-            return (1, Some(format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e)));
+            return (1,
+                    Some(
+                format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e),
+            ));
         }
     };
     let build_dir = PathBuf::from(format!("build-{}", arg));
     if build_dir.exists() {
         return (1,
-                Some(format!("The build directory ({:?}) already exists. Delete it first.",
-                             build_dir)));
+                Some(
+            format!(
+                "The build directory ({:?}) already exists. Delete it first.",
+                build_dir
+            )
+        ));
     }
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&build_dir).unwrap();
-    let mut configs = vec![config("Debug", Gcc, Debug, &[]),
-                           config("Release", Gcc, Release, &[]),
-                           config("Debug", Clang, Debug, &[]),
-                           config("Release", Clang, Release, &[])];
+    let mut configs = vec![
+        config("Debug", Gcc, Debug, &[]),
+        config("Release", Gcc, Release, &[]),
+        config("Debug", Clang, Debug, &[]),
+        config("Release", Clang, Release, &[]),
+    ];
     if props.has_sanitize && !matches.opt_present("no-sanitize") {
-        configs.extend(vec![config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
-                            config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
-                            config("Tsan", Clang, Debug, &["-DSANITIZE=thread"])]);
+        configs.extend(
+            vec![
+                config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
+                config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
+                config("Tsan", Clang, Debug, &["-DSANITIZE=thread"]),
+            ]
+        );
     }
     let build_system = if matches.opt_present("no-ninja") {
         BuildSystem::Make
@@ -184,10 +203,12 @@ fn run() -> (i32, Option<String>) {
     };
     for c in configs {
         use ansi_term::Colour::{Green, Yellow, White};
-        println!("{0} {1} {2} {0}",
-                 Green.bold().paint("==="),
-                 White.bold().paint("Creating configuration for"),
-                 Yellow.bold().paint(&c.name[..]));
+        println!(
+            "{0} {1} {2} {0}",
+            Green.bold().paint("==="),
+            White.bold().paint("Creating configuration for"),
+            Yellow.bold().paint(&c.name[..])
+        );
         if !create_config(&c, build_system, proj_dir.to_str().unwrap()) {
             break;
         }
@@ -199,8 +220,7 @@ fn run() -> (i32, Option<String>) {
 fn main() {
     let (retv, opt_msg) = run();
     if let Some(msg) = opt_msg {
-        use std::io::Write;
-        let _ = writeln!(std::io::stderr(), "{}", msg);
+        eprintln!("{}", msg);
     }
     std::process::exit(retv);
 }
