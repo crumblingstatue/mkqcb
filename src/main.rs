@@ -28,7 +28,9 @@ use std::fmt::{Display, Formatter};
 impl Display for Compiler {
     fn fmt(&self, fmtr: &mut Formatter) -> Result<(), std::fmt::Error> {
         write!(
-            fmtr, "{}", match *self {
+            fmtr,
+            "{}",
+            match *self {
                 Gcc => "GCC",
                 Clang => "Clang",
             }
@@ -110,9 +112,9 @@ struct CMakeListsProperties {
 fn parse_cmakelists_txt(path: &Path) -> std::io::Result<CMakeListsProperties> {
     use std::fs::File;
     use std::io::Read;
-    let mut f = try!(File::open(path.join("CMakeLists.txt")));
+    let mut f = File::open(path.join("CMakeLists.txt"))?;
     let mut s = String::new();
-    try!(f.read_to_string(&mut s));
+    f.read_to_string(&mut s)?;
     let has_sanitize = match s.find("${SANITIZE}") {
         Some(_) => true,
         None => false,
@@ -150,34 +152,40 @@ fn run() -> (i32, Option<String>) {
     match std::fs::metadata(&proj_dir) {
         Ok(_) => {}
         Err(e) => {
-            return (1,
-                    Some(
-                format!(
-                    "Error while trying to look up directory {:?}: {}",
-                    proj_dir,
-                    e
-                )
-            ));
+            return (
+                1,
+                Some(
+                    format!(
+                        "Error while trying to look up directory {:?}: {}",
+                        proj_dir,
+                        e
+                    ),
+                ),
+            );
         }
     }
     let props = match parse_cmakelists_txt(&proj_dir) {
         Ok(props) => props,
         Err(e) => {
-            return (1,
-                    Some(
-                format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e),
-            ));
+            return (
+                1,
+                Some(
+                    format!("Failed to open CMakeLists.txt in {:?}: {}", proj_dir, e),
+                ),
+            );
         }
     };
     let build_dir = PathBuf::from(format!("build-{}", arg));
     if build_dir.exists() {
-        return (1,
-                Some(
-            format!(
-                "The build directory ({:?}) already exists. Delete it first.",
-                build_dir
-            )
-        ));
+        return (
+            1,
+            Some(
+                format!(
+                    "The build directory ({:?}) already exists. Delete it first.",
+                    build_dir
+                ),
+            ),
+        );
     }
     std::fs::create_dir(&build_dir).unwrap();
     std::env::set_current_dir(&build_dir).unwrap();
@@ -193,7 +201,7 @@ fn run() -> (i32, Option<String>) {
                 config("Asan", Clang, Debug, &["-DSANITIZE=address"]),
                 config("Ubsan", Clang, Debug, &["-DSANITIZE=undefined"]),
                 config("Tsan", Clang, Debug, &["-DSANITIZE=thread"]),
-            ]
+            ],
         );
     }
     let build_system = if matches.opt_present("no-ninja") {
